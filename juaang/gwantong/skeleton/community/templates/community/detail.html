@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h2 class="text-center">DETAIL</h2>
+  <h3>{{ review.pk }} 번째 글</h3>
+  <hr>
+  <p>제목: {{ review.title }}</p>
+  <p>영화 제목: {{ review.movie_title }}</p>
+  <p>내용: {{ review.content }}</p>
+  <p>평점: {{ review.rank }}</p>
+  <p>작성 시각: {{ review.created_at }}</p>
+  <p>수정 시각: {{ review.updated_at }}</p>
+  <hr>
+  <h4>댓글 목록</h4>
+  <ul id="comment-list">
+    {% for comment in comments %}
+      <li id="comment-{{ comment.pk }}" data-comment-pk="{{ comment.pk }}">
+        <a href="{% url 'accounts:profile' comment.user.username %}">{{ comment.user }}</a> - <span>{{ comment.content }}</span>
+      </li>
+    {% empty %}
+      <p>댓글이 없어요..</p>
+    {% endfor %}
+  </ul>
+  <hr>
+  {% if user.is_authenticated %}
+    <form id='comment-form'>
+      {% csrf_token %}
+      {{ comment_form }}
+      <input type="submit">
+    </form>
+  {% else %}
+    <a href="{% url 'accounts:login' %}">[댓글을 작성하려면 로그인하세요.]</a>
+  {% endif %}
+  <a href="{% url 'community:index' %}">[back]</a>
+{% endblock  %}
+
+{% block script %}
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    const form = document.querySelector('#comment-form')
+    const input = document.querySelector('[name=content]')
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault()
+      let data = new FormData()
+      data.append('content', input.value)
+      axios({
+        method:'post',
+        url : `http://127.0.0.1:8000/movies/{{movie.pk}}/comments/`,
+        data,
+        headers: {'X-CSRFToken' : csrftoken},
+      })
+      .then((response) => {
+        console.log(response)
+        const { movie_pk, comment_pk } = response.data
+        const li = document.createElement('li')
+        li.innerHTML = `{{ request.user.username }} - <span>${input.value}</span>`
+        const ul = document.querySelector('#comment-list')
+        ul.append(li)
+
+        input.value = ''
+      })
+    })
+
+  </script>
+{% endblock script %}
